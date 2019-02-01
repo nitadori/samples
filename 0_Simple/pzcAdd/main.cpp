@@ -104,6 +104,7 @@ void pzcAdd(size_t num, const std::vector<double>& src, std::vector<double>& dst
         // Clear dst.
         cl::Event write_event;
         command_queue.enqueueFillBuffer(device_dst, 0, 0, sizeof(double) * num, nullptr, &write_event);
+        write_event.wait();
 
         // Set kernel args.
         kernel.setArg(0, device_src);
