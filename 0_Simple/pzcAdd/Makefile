@@ -5,6 +5,10 @@ TARGET=pzcAdd
 CPPSRC=main.cpp
 CCOPT=-O2 -Wall -D__LINUX__ -DNDEBUG -std=c++11
 
+INC_DIR?=
+
+LIB_DIR?=
+
 PZCL_KERNEL_DIRS=kernel
 PZC_TARGET_ARCH?=sc2
 export PZC_TARGET_ARCH
