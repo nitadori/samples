@@ -10,6 +10,9 @@ INC_DIR?=
 LIB_DIR?=
 
 PZCL_KERNEL_DIRS=kernel
+
+# supported archtecture:
+# sc1-64, sc2
 PZC_TARGET_ARCH?=sc2
 export PZC_TARGET_ARCH
 
