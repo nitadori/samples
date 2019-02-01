@@ -122,8 +122,9 @@ void pzcAdd(size_t num, const std::vector<double>& src, std::vector<double>& dst
             size_t global_work_size_[3] = { 0 };
             device.getInfo(CL_DEVICE_MAX_WORK_ITEM_SIZES, &global_work_size_);
 
+            global_work_size = global_work_size_[0];
             if (device_name.find("PEZY-SC2") != std::string::npos) {
-                global_work_size = (global_work_size_[0] > 15872) ? 15872 : global_work_size_[0];
+                global_work_size = std::min(global_work_size, (size_t)15872);
             }
 
             std::cout << "Use device : " << device_name << std::endl;
