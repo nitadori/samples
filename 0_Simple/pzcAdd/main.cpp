@@ -111,8 +111,26 @@ void pzcAdd(size_t num, const std::vector<double>& src, std::vector<double>& dst
         kernel.setArg(1, device_dst);
         kernel.setArg(2, num);
 
+        // Get workitem size.
+        // sc1-64: 8192  (1024 PEs * 8 threads)
+        // sc2   : 15782 (1984 PEs * 8 threads)
+        size_t global_work_size = 0;
+        {
+            std::string device_name;
+            device.getInfo(CL_DEVICE_NAME, &device_name);
+
+            size_t global_work_size_[3] = { 0 };
+            device.getInfo(CL_DEVICE_MAX_WORK_ITEM_SIZES, &global_work_size_);
+
+            if (device_name.find("PEZY-SC2") != std::string::npos) {
+                global_work_size = (global_work_size_[0] > 15872) ? 15872 : global_work_size_[0];
+            }
+
+            std::cout << "Use device : " << device_name << std::endl;
+            std::cout << "workitem   : " << global_work_size << std::endl;
+        }
+
         // Run device kernel.
-        size_t    global_work_size = 15872;
         cl::Event event;
         command_queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(global_work_size), cl::NullRange, nullptr, &event);
 
