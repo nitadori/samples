@@ -1,3 +1,9 @@
+/*!
+ * @author    PEZY Computing, K.K.
+ * @date      2019
+ * @copyright BSD-3-Clause
+ */
+
 #define __CL_ENABLE_EXCEPTIONS
 #include <CL/cl.hpp>
 #include <cassert>

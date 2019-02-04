@@ -1,8 +1,11 @@
-/**
- * @copyright 2018 PEZY Computing, K.K.
+/*!
+ * @author    PEZY Computing, K.K.
+ * @date      2019
+ * @copyright BSD-3-Clause
  */
 
-#include "CL/cl.hpp"
+#define __CL_ENABLE_EXCEPTIONS
+#include <CL/cl.hpp>
 
 #include <cassert>
 #include <fstream>
