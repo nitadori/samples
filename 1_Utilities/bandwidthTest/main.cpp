@@ -122,19 +122,22 @@ namespace {
 			} else if(c == 'i') {
 				size_t inc = atoiKMGT(optarg);
 				params.range_inc = inc;
+			} else {
+				// invalid option
+				return -3000;
 			}
 		}
 
 		if(params.mode == pezy::RANGE) {
 			if(params.range_start > params.range_end) {
 				std::cout << "Invalid start and end value." << std::endl;
-				return -3000;
+				return -4000;
 			} else if(params.range_start < 0){
 				std::cout << "Invalid range start value." << std::endl;
-				return -4000;
+				return -5000;
 			} else if(params.range_end > ((size_t)32 * 1024 * 1024 * 1024)) { // over 32GB
 				std::cout << "Invalid range end value." << std::endl;
-				return -5000;
+				return -6000;
 			}
 		}
 
