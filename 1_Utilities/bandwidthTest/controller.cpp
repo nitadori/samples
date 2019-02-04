@@ -58,7 +58,7 @@ namespace {
 
 	void dispTrans()
 	{
-		std::cout << "\tTransfer Size(byte)\t\t\tBandwidth(MB/s)" << std::endl;
+		std::cout << "\tTransfer Size(byte)\t\tBandwidth(MB/s)" << std::endl;
 	}
 
 	void dispMemMode(pezy::MEMMODE mem_mode)
@@ -193,7 +193,7 @@ namespace pezy
 		double mbs = size / e * 1.e3;
 
 		//std::cout << "\t" << size << "\t\t\t\t" << mbs << std::endl;
-		std::cout << "\t" << size << "\t\t\t\t";
+		std::cout << "\t" << size << "\t\t\t";
 		if(std::to_string(size).length() < 8) std::cout << "\t";
 		std::cout << mbs << std::endl;
 	}
@@ -234,9 +234,9 @@ namespace pezy
 
 				checkAndUnLock(mem_mode, context, host_src_ptr, size);
 
-				is_true &= verify(host_dst, host_src);
-				if(!is_true) {
+				if(!verify(host_dst, host_src)) {
 					std::cerr << " " << size << " Write Test failed " << std::endl;
+					is_true = false;
 				}
 			}
 		}
@@ -275,9 +275,9 @@ namespace pezy
 				checkAndUnLock(mem_mode, context, host_src_ptr, size);
 				checkAndUnLock(mem_mode, context, host_dst_ptr, size);
 
-				is_true &= verify(host_dst, host_src);
-				if(!is_true) {
+				if(!verify(host_dst, host_src)) {
 					std::cerr << " " << size << " Read Test failed " << std::endl;
+					is_true = false;
 				}
 			}
 		}
