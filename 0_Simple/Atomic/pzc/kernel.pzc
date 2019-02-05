@@ -6,10 +6,12 @@
 
 #include <pzc_builtin.h>
 
-void pzc_add(size_t        num,
-             double*       dst,
-             const double* src0,
-             const double* src1)
+/* include OpenCL atomic function wrapper header file for compatibility. */
+#include "atomic_wrapper.h"
+
+void pzc_atomic_add(const double* src,
+                    double*       dst,
+                    size_t        num)
 {
     size_t       pid              = get_pid();
     size_t       tid              = get_tid();
@@ -17,11 +19,10 @@ void pzc_add(size_t        num,
     const size_t GLOBAL_WORK_SIZE = get_maxtid() * get_maxpid();
 
     for (size_t i = gid; i < num; i += GLOBAL_WORK_SIZE) {
-        double s0 = src0[i];
-        double s1 = src1[i];
+        double s = src[i];
         chgthread();
-        dst[i] = s0 + s1;
+        atomic_add(dst, s);
     }
 
-    flush();
+    atomic_flush();
 }

@@ -9,6 +9,7 @@
 #include <cassert>
 #include <fstream>
 #include <iostream>
+#include <omp.h>
 #include <random>
 #include <sstream>
 #include <stdexcept>
@@ -24,10 +25,12 @@ inline void  initVector(std::vector<double>& src)
     }
 }
 
-void cpuAdd(size_t num, std::vector<double>& dst, const std::vector<double>& src0, const std::vector<double>& src1)
+void cpuAtomicAdd(size_t num, const std::vector<double>& src, double& dst)
 {
+#pragma omp parallel for
     for (size_t i = 0; i < num; ++i) {
-        dst[i] = src0[i] + src1[i];
+#pragma omp atomic update
+        dst += src[i];
     }
 }
 
@@ -71,7 +74,7 @@ cl::Program createProgram(cl::Context& context, const cl::Device& device, const 
     return createProgram(context, devices, filename);
 }
 
-void pzcAdd(size_t num, std::vector<double>& dst, const std::vector<double>& src0, const std::vector<double>& src1)
+void pzcAtomicAdd(size_t num, const std::vector<double>& src, double& dst)
 {
     try {
         // Get Platform
@@ -98,27 +101,19 @@ void pzcAdd(size_t num, std::vector<double>& dst, const std::vector<double>& src
 
         // Create Kernel.
         // Give kernel name without pzc_ prefix.
-        auto kernel = cl::Kernel(program, "add");
+        auto kernel = cl::Kernel(program, "atomic_add");
 
         // Create Buffers.
-        auto device_src0 = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * num);
-        auto device_src1 = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * num);
-        auto device_dst  = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * num);
+        auto device_src = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * num);
+        auto device_dst = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double));
 
         // Send src.
-        command_queue.enqueueWriteBuffer(device_src0, true, 0, sizeof(double) * num, &src0[0]);
-        command_queue.enqueueWriteBuffer(device_src1, true, 0, sizeof(double) * num, &src1[0]);
-
-        // Clear dst.
-        cl::Event write_event;
-        command_queue.enqueueFillBuffer(device_dst, 0, 0, sizeof(double) * num, nullptr, &write_event);
-        write_event.wait();
+        command_queue.enqueueWriteBuffer(device_src, true, 0, sizeof(double) * num, &src[0]);
 
         // Set kernel args.
-        kernel.setArg(0, num);
+        kernel.setArg(0, device_src);
         kernel.setArg(1, device_dst);
-        kernel.setArg(2, device_src0);
-        kernel.setArg(3, device_src1);
+        kernel.setArg(2, num);
 
         // Get workitem size.
         // sc1-64: 8192  (1024 PEs * 8 threads)
@@ -148,7 +143,7 @@ void pzcAdd(size_t num, std::vector<double>& dst, const std::vector<double>& src
         event.wait();
 
         // Get dst.
-        command_queue.enqueueReadBuffer(device_dst, true, 0, sizeof(double) * num, &dst[0]);
+        command_queue.enqueueReadBuffer(device_dst, true, 0, sizeof(double), &dst);
 
         // Finish all commands.
         command_queue.flush();
@@ -161,23 +156,14 @@ void pzcAdd(size_t num, std::vector<double>& dst, const std::vector<double>& src
     }
 }
 
-bool verify(const std::vector<double>& actual, const std::vector<double>& expected)
+bool verify(const double actual, const double expected)
 {
-    assert(actual.size() == expected.size());
+    bool is_true = true;
 
-    bool   is_true     = true;
-    size_t error_count = 0;
-
-    const size_t num = actual.size();
-    for (size_t i = 0; i < num; ++i) {
-        if (fabs(actual[i] - expected[i]) > 1.e-7) {
-
-            if (error_count < 10) {
-                std::cerr << "# ERROR " << i << " " << actual[i] << " " << expected[i] << std::endl;
-            }
-            error_count++;
-            is_true = false;
-        }
+    if (fabs(actual - expected) > 1.e-7) {
+        std::cerr << "# ERROR "
+                  << " " << actual << " " << expected << std::endl;
+        is_true = false;
     }
 
     return is_true;
@@ -194,19 +180,17 @@ int main(int argc, char** argv)
 
     std::cout << "num " << num << std::endl;
 
-    std::vector<double> src0(num);
-    std::vector<double> src1(num);
-    initVector(src0);
-    initVector(src1);
+    std::vector<double> src(num);
+    initVector(src);
 
-    std::vector<double> dst_sc(num, 0);
-    std::vector<double> dst_cpu(num, 0);
+    double dst_sc  = 0;
+    double dst_cpu = 0;
 
-    // run cpu add
-    cpuAdd(num, dst_cpu, src0, src1);
+    // run cpu atomic add
+    cpuAtomicAdd(num, src, dst_cpu);
 
-    // run device add
-    pzcAdd(num, dst_sc, src0, src1);
+    // run device atomic add
+    pzcAtomicAdd(num, src, dst_sc);
 
     // verify
     if (verify(dst_sc, dst_cpu)) {
