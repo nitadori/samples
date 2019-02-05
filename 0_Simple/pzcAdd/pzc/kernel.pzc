@@ -6,9 +6,10 @@
 
 #include <pzc_builtin.h>
 
-void pzc_add(const double* src,
+void pzc_add(size_t        num,
              double*       dst,
-             size_t        num)
+             const double* src0,
+			 const double* src1)
 {
     size_t       pid              = get_pid();
     size_t       tid              = get_tid();
@@ -16,9 +17,10 @@ void pzc_add(const double* src,
     const size_t GLOBAL_WORK_SIZE = get_maxtid() * get_maxpid();
 
     for (size_t i = gid; i < num; i += GLOBAL_WORK_SIZE) {
-        double s = src[i];
+        double s0 = src0[i];
+		double s1 = src1[i];
         chgthread();
-        dst[i] += s;
+        dst[i] = s0 + s1;
     }
 
     flush();
