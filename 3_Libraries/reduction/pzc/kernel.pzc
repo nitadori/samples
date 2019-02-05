@@ -13,9 +13,9 @@ static double shared[16384];
 #endif
 
 void pzc_sum_simple(
-    double *sum,
-    size_t num,
-    const double *data)
+    double*       sum,
+    size_t        num,
+    const double* data)
 {
     size_t       pid              = get_pid();
     size_t       tid              = get_tid();
@@ -64,9 +64,9 @@ void pzc_sum_simple(
 }
 
 void pzc_sum_base2(
-    double *sum,
-    size_t num,
-    const double *data)
+    double*       sum,
+    size_t        num,
+    const double* data)
 {
     size_t       pid              = get_pid();
     size_t       tid              = get_tid();
@@ -85,7 +85,8 @@ void pzc_sum_base2(
     flush();
 
     size_t base = 1;
-    while (base * 2 < GLOBAL_WORK_SIZE) base *= 2;
+    while (base * 2 < GLOBAL_WORK_SIZE)
+        base *= 2;
 
     // when GLOBAL_WORK_SIZE is not power of 2
     if (base * 2 != GLOBAL_WORK_SIZE) {
@@ -111,9 +112,9 @@ void pzc_sum_base2(
 }
 
 void pzc_sum_base4(
-    double *sum,
-    size_t num,
-    const double *data)
+    double*       sum,
+    size_t        num,
+    const double* data)
 {
     size_t       pid              = get_pid();
     size_t       tid              = get_tid();
@@ -132,13 +133,14 @@ void pzc_sum_base4(
     flush();
 
     size_t base = 1;
-    while (base * 4 < GLOBAL_WORK_SIZE) base *= 4;
+    while (base * 4 < GLOBAL_WORK_SIZE)
+        base *= 4;
 
     // when GLOBAL_WORK_SIZE is not power of 4
     if (base * 4 != GLOBAL_WORK_SIZE) {
         if (gid < base) {
-            double acc = 0.0; 
-            for (int i = gid; i < GLOBAL_WORK_SIZE; i+=base) {
+            double acc = 0.0;
+            for (int i = gid; i < GLOBAL_WORK_SIZE; i += base) {
                 acc += shared[i];
             }
             shared[gid] = acc;
@@ -149,9 +151,9 @@ void pzc_sum_base4(
 
     while (base > 0) {
         if (gid < base) {
-            shared[gid] += shared[base*1 + gid];
-            shared[gid] += shared[base*2 + gid];
-            shared[gid] += shared[base*3 + gid];
+            shared[gid] += shared[base * 1 + gid];
+            shared[gid] += shared[base * 2 + gid];
+            shared[gid] += shared[base * 3 + gid];
         }
         base /= 4;
         flush();

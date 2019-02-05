@@ -7,13 +7,13 @@
 #define __CL_ENABLE_EXCEPTIONS
 #include <CL/cl.hpp>
 #include <cassert>
+#include <chrono>
 #include <fstream>
 #include <iostream>
 #include <random>
 #include <sstream>
 #include <stdexcept>
 #include <vector>
-#include <chrono>
 
 namespace {
 std::mt19937 mt(0);
@@ -70,11 +70,11 @@ cl::Program createProgram(cl::Context& context, const std::vector<cl::Device>& d
 
 cl::Program createProgram(cl::Context& context, const cl::Device& device, const std::string& filename)
 {
-    std::vector<cl::Device> devices { device };
+    std::vector<cl::Device> devices{ device };
     return createProgram(context, devices, filename);
 }
 
-void getBasicDeviceInfo(const cl::Device &device, std::string& device_name, size_t& global_work_size)
+void getBasicDeviceInfo(const cl::Device& device, std::string& device_name, size_t& global_work_size)
 {
     device.getInfo(CL_DEVICE_NAME, &device_name);
 
@@ -89,8 +89,8 @@ void getBasicDeviceInfo(const cl::Device &device, std::string& device_name, size
 
 void benchmarkSum(const std::vector<double>& src)
 {
-    const size_t loop_count = 20;
-    const double expected = cpuSum(src);
+    const size_t                   loop_count   = 20;
+    const double                   expected     = cpuSum(src);
     const std::vector<std::string> kernel_names = { "sum_simple", "sum_base2", "sum_base4" };
 
     try {
@@ -117,9 +117,9 @@ void benchmarkSum(const std::vector<double>& src)
         auto program = createProgram(context, device, "kernel/kernel.pz");
 
         // Create Buffers.
-        size_t num = src.size();
-        auto device_src = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * num);
-        auto device_dst = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double));
+        size_t num        = src.size();
+        auto   device_src = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * num);
+        auto   device_dst = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double));
 
         // Send src.
         command_queue.enqueueWriteBuffer(device_src, true, 0, sizeof(double) * num, &src[0]);
@@ -127,8 +127,8 @@ void benchmarkSum(const std::vector<double>& src)
         // Get workitem size.
         // sc1-64: 8192  (1024 PEs * 8 threads)
         // sc2   : 15782 (1984 PEs * 8 threads)
-        std::string device_name = "Unknown";
-        size_t global_work_size = 0;
+        std::string device_name      = "Unknown";
+        size_t      global_work_size = 0;
         getBasicDeviceInfo(device, device_name, global_work_size);
         std::cout << "Use device : " << device_name << std::endl;
         std::cout << "workitem   : " << global_work_size << std::endl;
@@ -145,14 +145,14 @@ void benchmarkSum(const std::vector<double>& src)
             double total_time = 0.0; // total elapsed time in nanoseconds
             bool   verify_ok  = true;
 
-            for (size_t i = 0; i < loop_count+1; i++) {
+            for (size_t i = 0; i < loop_count + 1; i++) {
                 // Clear dst.
                 cl::Event write_event;
                 command_queue.enqueueFillBuffer(device_dst, 0, 0, sizeof(double), nullptr, &write_event);
                 write_event.wait();
 
                 // Invoke kernel
-                auto start = std::chrono::high_resolution_clock::now();
+                auto      start = std::chrono::high_resolution_clock::now();
                 cl::Event event;
                 command_queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(global_work_size), cl::NullRange, nullptr, &event);
                 event.wait();
@@ -162,7 +162,7 @@ void benchmarkSum(const std::vector<double>& src)
                 double actual;
                 command_queue.enqueueReadBuffer(device_dst, true, 0, sizeof(double), &actual);
 
-                if (std::abs(expected - actual)/std::max(std::abs(expected), std::abs(actual)) > 1e-8) {
+                if (std::abs(expected - actual) / std::max(std::abs(expected), std::abs(actual)) > 1e-8) {
                     std::cout << kernel_name << " failed:  expected: " << expected << "   actual: " << actual << std::endl;
                     verify_ok = false;
                     break;
@@ -175,7 +175,7 @@ void benchmarkSum(const std::vector<double>& src)
 
             // Print result
             if (verify_ok) {
-                std::cout << kernel_name << "\t" << (total_time / loop_count)/1e6 << " ms" << std::endl;
+                std::cout << kernel_name << "\t" << (total_time / loop_count) / 1e6 << " ms" << std::endl;
             }
         }
     } catch (const cl::Error& e) {
