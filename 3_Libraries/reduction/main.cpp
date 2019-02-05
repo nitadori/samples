@@ -91,7 +91,7 @@ void benchmarkSum(const std::vector<double>& src)
 {
     const size_t                   loop_count   = 20;
     const double                   expected     = cpuSum(src);
-    const std::vector<std::string> kernel_names = { "sum_simple", "sum_base2", "sum_base4" };
+    const std::vector<std::string> kernel_names = { "sum_simple", "sum_base2", "sum_base4", "sum_base8" };
 
     try {
         // Get Platform
@@ -158,10 +158,11 @@ void benchmarkSum(const std::vector<double>& src)
                 event.wait();
                 auto end = std::chrono::high_resolution_clock::now();
 
-                // Check result
+                // Get result
                 double actual;
                 command_queue.enqueueReadBuffer(device_dst, true, 0, sizeof(double), &actual);
 
+                // Check result
                 if (std::abs(expected - actual) / std::max(std::abs(expected), std::abs(actual)) > 1e-8) {
                     std::cout << kernel_name << " failed:  expected: " << expected << "   actual: " << actual << std::endl;
                     verify_ok = false;
@@ -194,7 +195,8 @@ int main(int argc, char** argv)
         num = strtol(argv[1], nullptr, 10);
     }
 
-    std::cout << "num " << num << std::endl;
+    std::cout << "Calculating sum of an array of double." << std::endl;
+    std::cout << "Array size : " << num << std::endl;
 
     std::vector<double> src(num);
     initVector(src);
