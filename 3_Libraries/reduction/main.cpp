@@ -109,8 +109,8 @@ void benchmarkSum(const std::vector<double>& src)
         // Create Context.
         auto context = cl::Context(device);
 
-        // Create CommandQueue.
-        auto command_queue = cl::CommandQueue(context, device, 0);
+        // Create CommandQueue (enable profiling).
+        auto command_queue = cl::CommandQueue(context, device, CL_QUEUE_PROFILING_ENABLE);
 
         // Create Program.
         // Load compiled binary file and create cl::Program object.
@@ -152,11 +152,13 @@ void benchmarkSum(const std::vector<double>& src)
                 write_event.wait();
 
                 // Invoke kernel
-                auto      start = std::chrono::high_resolution_clock::now();
                 cl::Event event;
                 command_queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(global_work_size), cl::NullRange, nullptr, &event);
                 event.wait();
-                auto end = std::chrono::high_resolution_clock::now();
+
+                cl_ulong start, end;
+                event.getProfilingInfo(CL_PROFILING_COMMAND_START, &start);
+                event.getProfilingInfo(CL_PROFILING_COMMAND_END, &end);
 
                 // Get result
                 double actual;
@@ -170,7 +172,7 @@ void benchmarkSum(const std::vector<double>& src)
                 }
 
                 if (i != 0) {
-                    total_time += std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+                    total_time += (end - start);
                 }
             }
 
