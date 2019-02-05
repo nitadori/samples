@@ -1,0 +1,28 @@
+/*!
+ * @author    PEZY Computing, K.K.
+ * @date      2019
+ * @copyright BSD-3-Clause
+ */
+
+#include <pzc_builtin.h>
+
+/* include OpenCL atomic function wrapper header file for compatibility. */
+#include "atomic_wrapper.h"
+
+void pzc_atomic_add(const double* src,
+                    double*       dst,
+                    size_t        num)
+{
+    size_t       pid              = get_pid();
+    size_t       tid              = get_tid();
+    size_t       gid              = pid * get_maxtid() + tid;
+    const size_t GLOBAL_WORK_SIZE = get_maxtid() * get_maxpid();
+
+    for (size_t i = gid; i < num; i += GLOBAL_WORK_SIZE) {
+        double s = src[i];
+        chgthread();
+        atomic_add(dst, s);
+    }
+
+    atomic_flush();
+}
