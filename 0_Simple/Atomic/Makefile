@@ -12,8 +12,7 @@ LIB_DIR?=
 
 PZCL_KERNEL_DIRS=kernel
 
-# supported archtecture:
-# sc1-64, sc2
+# supported archtecture is sc2 or later. (sc1/sc1-64 does not support atomic functions)
 PZC_TARGET_ARCH?=sc2
 export PZC_TARGET_ARCH
 
