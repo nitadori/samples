@@ -1,0 +1,164 @@
+/*!
+ * @author    PEZY Computing, K.K.
+ * @date      2019
+ * @copyright BSD-3-Clause
+ */
+
+#include <pzc_builtin.h>
+
+#if defined(__pezy_sc__)
+static double shared[8192];
+#elif defined(__pezy_sc2__)
+static double shared[16384];
+#endif
+
+void pzc_sum_simple(
+    double *sum,
+    size_t num,
+    const double *data)
+{
+    size_t       pid              = get_pid();
+    size_t       tid              = get_tid();
+    size_t       gid              = pid * get_maxtid() + tid;
+    const size_t GLOBAL_WORK_SIZE = get_maxtid() * get_maxpid();
+
+    {
+        double acc = 0.0;
+        for (size_t i = gid; i < num; i += GLOBAL_WORK_SIZE) {
+            double val = data[i];
+            chgthread();
+            acc += val;
+        }
+        shared[gid] = acc;
+    }
+    flush();
+
+    if (gid < 128) {
+        double acc = 0.0;
+        for (size_t i = gid; i < GLOBAL_WORK_SIZE; i += 128) {
+            acc += shared[i];
+            chgthread();
+        }
+        shared[gid] = acc;
+    }
+    flush_L2();
+
+    if (gid < 8) {
+        double acc = 0.0;
+        for (size_t i = gid; i < 128; i += 8) {
+            acc += shared[i];
+            chgthread();
+        }
+        shared[gid] = acc;
+    }
+    flush_L1();
+
+    if (gid == 0) {
+        double acc = 0.0;
+        for (int i = 0; i < 8; i++) {
+            acc += shared[i];
+        }
+        *sum = acc;
+    }
+    flush();
+}
+
+void pzc_sum_base2(
+    double *sum,
+    size_t num,
+    const double *data)
+{
+    size_t       pid              = get_pid();
+    size_t       tid              = get_tid();
+    size_t       gid              = pid * get_maxtid() + tid;
+    const size_t GLOBAL_WORK_SIZE = get_maxtid() * get_maxpid();
+
+    {
+        double acc = 0.0;
+        for (size_t i = gid; i < num; i += GLOBAL_WORK_SIZE) {
+            double val = data[i];
+            chgthread();
+            acc += val;
+        }
+        shared[gid] = acc;
+    }
+    flush();
+
+    size_t base = 1;
+    while (base * 2 < GLOBAL_WORK_SIZE) base *= 2;
+
+    // when GLOBAL_WORK_SIZE is not power of 2
+    if (base * 2 != GLOBAL_WORK_SIZE) {
+        if (base + gid < GLOBAL_WORK_SIZE) {
+            shared[gid] += shared[base + gid];
+        }
+        base /= 2;
+        flush();
+    }
+
+    while (base > 0) {
+        if (gid < base) {
+            shared[gid] += shared[base + gid];
+        }
+        base /= 2;
+        flush();
+    }
+
+    if (gid == 0) {
+        *sum = shared[0];
+    }
+    flush();
+}
+
+void pzc_sum_base4(
+    double *sum,
+    size_t num,
+    const double *data)
+{
+    size_t       pid              = get_pid();
+    size_t       tid              = get_tid();
+    size_t       gid              = pid * get_maxtid() + tid;
+    const size_t GLOBAL_WORK_SIZE = get_maxtid() * get_maxpid();
+
+    {
+        double acc = 0.0;
+        for (size_t i = gid; i < num; i += GLOBAL_WORK_SIZE) {
+            double val = data[i];
+            chgthread();
+            acc += val;
+        }
+        shared[gid] = acc;
+    }
+    flush();
+
+    size_t base = 1;
+    while (base * 4 < GLOBAL_WORK_SIZE) base *= 4;
+
+    // when GLOBAL_WORK_SIZE is not power of 4
+    if (base * 4 != GLOBAL_WORK_SIZE) {
+        if (gid < base) {
+            double acc = 0.0; 
+            for (int i = gid; i < GLOBAL_WORK_SIZE; i+=base) {
+                acc += shared[i];
+            }
+            shared[gid] = acc;
+        }
+        base /= 4;
+        flush();
+    }
+
+    while (base > 0) {
+        if (gid < base) {
+            shared[gid] += shared[base*1 + gid];
+            shared[gid] += shared[base*2 + gid];
+            shared[gid] += shared[base*3 + gid];
+        }
+        base /= 4;
+        flush();
+    }
+
+    if (gid == 0) {
+        *sum = shared[0];
+    }
+    flush();
+}
