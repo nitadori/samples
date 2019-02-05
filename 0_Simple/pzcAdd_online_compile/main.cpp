@@ -16,7 +16,7 @@
 
 namespace {
 // pzc kernel source code for pzc_add
-std::string kernel_src_pzc_add = R"(
+std::string  kernel_src_pzc_add = R"(
 #include <pzc_builtin.h>
 
 void pzc_add(size_t        num,
