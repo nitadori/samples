@@ -13,8 +13,9 @@ PZCL_KERNEL_DIRS=
 
 # supported archtecture:
 # sc1-64, sc2
-PZC_TARGET_ARCH?=sc2
-export PZC_TARGET_ARCH
+#
+# limitation:
+# sc1 has a limitation. Please refer to the release note in the pzsdk.
 
 include $(DEFAULT_MAKE)
 
