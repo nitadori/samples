@@ -24,7 +24,7 @@ inline void  initVector(std::vector<double>& src)
     }
 }
 
-	void cpuAdd(size_t num, std::vector<double>& dst, const std::vector<double>& src0, const std::vector<double>& src1)
+void cpuAdd(size_t num, std::vector<double>& dst, const std::vector<double>& src0, const std::vector<double>& src1)
 {
     for (size_t i = 0; i < num; ++i) {
         dst[i] = src0[i] + src1[i];
@@ -67,11 +67,11 @@ cl::Program createProgram(cl::Context& context, const std::vector<cl::Device>& d
 
 cl::Program createProgram(cl::Context& context, const cl::Device& device, const std::string& filename)
 {
-    std::vector<cl::Device> devices { device };
+    std::vector<cl::Device> devices{ device };
     return createProgram(context, devices, filename);
 }
 
-	void pzcAdd(size_t num, std::vector<double>& dst, const std::vector<double>& src0, const std::vector<double>& src1)
+void pzcAdd(size_t num, std::vector<double>& dst, const std::vector<double>& src0, const std::vector<double>& src1)
 {
     try {
         // Get Platform
@@ -103,7 +103,7 @@ cl::Program createProgram(cl::Context& context, const cl::Device& device, const 
         // Create Buffers.
         auto device_src0 = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * num);
         auto device_src1 = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * num);
-        auto device_dst = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * num);
+        auto device_dst  = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * num);
 
         // Send src.
         command_queue.enqueueWriteBuffer(device_src0, true, 0, sizeof(double) * num, &src0[0]);
@@ -118,7 +118,7 @@ cl::Program createProgram(cl::Context& context, const cl::Device& device, const 
         kernel.setArg(0, num);
         kernel.setArg(1, device_dst);
         kernel.setArg(2, device_src0);
-		kernel.setArg(3, device_src1);
+        kernel.setArg(3, device_src1);
 
         // Get workitem size.
         // sc1-64: 8192  (1024 PEs * 8 threads)

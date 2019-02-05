@@ -9,7 +9,7 @@
 void pzc_add(size_t        num,
              double*       dst,
              const double* src0,
-			 const double* src1)
+             const double* src1)
 {
     size_t       pid              = get_pid();
     size_t       tid              = get_tid();
@@ -18,7 +18,7 @@ void pzc_add(size_t        num,
 
     for (size_t i = gid; i < num; i += GLOBAL_WORK_SIZE) {
         double s0 = src0[i];
-		double s1 = src1[i];
+        double s1 = src1[i];
         chgthread();
         dst[i] = s0 + s1;
     }
