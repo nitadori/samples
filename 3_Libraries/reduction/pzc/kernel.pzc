@@ -12,6 +12,8 @@ static double shared[8192];
 static double shared[16384];
 #endif
 
+#define THREAD_IN_CITY 128
+
 void pzc_sum_simple(
     double*       sum,
     size_t        num,
@@ -33,9 +35,9 @@ void pzc_sum_simple(
     }
     flush();
 
-    if (gid < 128) {
+    if (gid < THREAD_IN_CITY) {
         double acc = 0.0;
-        for (size_t i = gid; i < GLOBAL_WORK_SIZE; i += 128) {
+        for (size_t i = gid; i < GLOBAL_WORK_SIZE; i += THREAD_IN_CITY) {
             acc += shared[i];
             chgthread();
         }
@@ -45,7 +47,7 @@ void pzc_sum_simple(
 
     if (gid < 8) {
         double acc = 0.0;
-        for (size_t i = gid; i < 128; i += 8) {
+        for (size_t i = gid; i < THREAD_IN_CITY; i += 8) {
             acc += shared[i];
             chgthread();
         }
@@ -93,16 +95,19 @@ void pzc_sum_base2(
         if (base + gid < GLOBAL_WORK_SIZE) {
             shared[gid] += shared[base + gid];
         }
-        base /= 2;
         flush();
+        base /= 2;
     }
 
     while (base > 0) {
         if (gid < base) {
             shared[gid] += shared[base + gid];
         }
+        if (base > THREAD_IN_CITY)
+            flush();
+        else
+            flush_L2();
         base /= 2;
-        flush();
     }
 
     if (gid == 0) {
@@ -145,8 +150,8 @@ void pzc_sum_base4(
             }
             shared[gid] = acc;
         }
-        base /= 4;
         flush();
+        base /= 4;
     }
 
     while (base > 0) {
@@ -155,8 +160,11 @@ void pzc_sum_base4(
             shared[gid] += shared[base * 2 + gid];
             shared[gid] += shared[base * 3 + gid];
         }
+        if (base > THREAD_IN_CITY)
+            flush();
+        else
+            flush_L2();
         base /= 4;
-        flush();
     }
 
     if (gid == 0) {
