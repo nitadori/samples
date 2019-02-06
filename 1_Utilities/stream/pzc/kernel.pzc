@@ -1,0 +1,89 @@
+#include <pzc_builtin.h>
+
+namespace {
+template <typename T>
+void Copy(T* c, const T* a, size_t num)
+{
+    size_t       pid              = get_pid();
+    size_t       tid              = get_tid();
+    size_t       gid              = pid * get_maxtid() + tid;
+    const size_t GLOBAL_WORK_SIZE = get_maxtid() * get_maxpid();
+
+    for (size_t i = gid; i < num; i += GLOBAL_WORK_SIZE) {
+        c[i] = a[i];
+        chgthread();
+    }
+}
+
+template <typename T>
+void Scale(T* b, const T* c, T scalar, size_t num)
+{
+    size_t       pid              = get_pid();
+    size_t       tid              = get_tid();
+    size_t       gid              = pid * get_maxtid() + tid;
+    const size_t GLOBAL_WORK_SIZE = get_maxtid() * get_maxpid();
+
+    for (size_t i = gid; i < num; i += GLOBAL_WORK_SIZE) {
+        b[i] = scalar * c[i];
+        chgthread();
+    }
+}
+
+template <typename T>
+void Add(T* c, const T* a, const T* b, size_t num)
+{
+    size_t       pid              = get_pid();
+    size_t       tid              = get_tid();
+    size_t       gid              = pid * get_maxtid() + tid;
+    const size_t GLOBAL_WORK_SIZE = get_maxtid() * get_maxpid();
+
+    for (size_t i = gid; i < num; i += GLOBAL_WORK_SIZE) {
+        c[i] = a[i] + b[i];
+        chgthread();
+    }
+}
+
+template <typename T>
+void Triad(T* a, const T* b, const T* c, T scalar, size_t num)
+{
+    size_t       pid              = get_pid();
+    size_t       tid              = get_tid();
+    size_t       gid              = pid * get_maxtid() + tid;
+    const size_t GLOBAL_WORK_SIZE = get_maxtid() * get_maxpid();
+
+    for (size_t i = gid; i < num; i += GLOBAL_WORK_SIZE) {
+        a[i] = b[i] + scalar * c[i];
+        chgthread();
+    }
+}
+}
+
+void pzc_Empty()
+{
+
+    flush();
+}
+
+void pzc_Copy(double* c, const double* a, size_t num)
+{
+    Copy(c, a, num);
+    flush();
+}
+
+void pzc_Scale(double* b, const double* c, double scalar, size_t num)
+{
+    Scale(b, c, scalar, num);
+    flush();
+}
+
+void pzc_Add(double* c, const double* a, const double* b, size_t num)
+{
+    Add(c, a, b, num);
+    flush();
+}
+
+void pzc_Triad(double* a, const double* b, const double* c, double scalar, size_t num)
+{
+    Triad(a, b, c, scalar, num);
+    flush();
+}
