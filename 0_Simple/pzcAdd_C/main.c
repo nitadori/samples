@@ -1,3 +1,9 @@
+/*!
+ * @author    PEZY Computing, K.K.
+ * @date      2019
+ * @copyright BSD-3-Clause
+ */
+
 #define _POSIX_SOURCE
 #include <math.h>
 #include <stdbool.h>
@@ -101,12 +107,14 @@ static cl_program createProgram(cl_context context, cl_device_id device, const c
 static cl_int executeKernel(cl_device_id device, cl_command_queue queue, cl_kernel kernel)
 {
     enum { Max_Device_Name_Size = 256 };
-    char   device_name[Max_Device_Name_Size] = { 0 };
-    size_t global_work_size                  = 0;
-    cl_event event = NULL;
+    char     device_name[Max_Device_Name_Size] = { 0 };
+    size_t   global_work_size                  = 0;
+    cl_event event                             = NULL;
 
+    // Get workitem size.
+    // sc1-64: 8192  (1024 PEs * 8 threads)
+    // sc2   : 15782 (1984 PEs * 8 threads)
     clGetDeviceInfo(device, CL_DEVICE_NAME, Max_Device_Name_Size - 1, device_name, NULL);
-
     {
         size_t global_work_size_[3] = { 0 };
         clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(global_work_size_), global_work_size_, NULL);
@@ -118,8 +126,10 @@ static cl_int executeKernel(cl_device_id device, cl_command_queue queue, cl_kern
     printf("Device   : %s\n", device_name);
     printf("Workitem : %zu\n", global_work_size);
 
+    // Execute kernel
     cl_int err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global_work_size, NULL, 0, NULL, &event);
 
+    // Wait for completion
     if (err == CL_SUCCESS) {
         clWaitForEvents(1, &event);
         clReleaseEvent(event);
@@ -143,36 +153,43 @@ static void pzcAdd(const size_t num, double* dst, const double* src0, const doub
     cl_event         write_event = NULL;
     const double     zero        = 0.0;
 
+    // Get Platform
     if ((err = clGetPlatformIDs(1, &platform_id, NULL)) != CL_SUCCESS) {
         fprintf(stderr, "clGetPlatformIDs: %d\n", err);
         goto Leave;
     }
 
+    // Get devices and use first one
     if ((err = clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_DEFAULT, 1, &device_id, NULL)) != CL_SUCCESS) {
         fprintf(stderr, "clGetDeviceIDs: %d\n", err);
         goto Leave;
     }
 
+    // Create Context
     if ((context = clCreateContext(NULL, 1, &device_id, NULL, NULL, &err)) == NULL) {
         fprintf(stderr, "clCreateContext: %d\n", err);
         goto Leave;
     }
 
+    // Create CommandQueue
     if ((queue = clCreateCommandQueue(context, device_id, 0, &err)) == NULL) {
         fprintf(stderr, "clCreateCommandQueue: %d\n", err);
         goto Leave;
     }
 
+    // Create Program.
     if ((program = createProgram(context, device_id, "kernel/kernel.pz", &err)) == NULL) {
         fprintf(stderr, "clCreateProgram: %d\n", err);
         goto Leave;
     }
 
+    // Create Kernel
     if ((kernel = clCreateKernel(program, "add", &err)) == NULL) {
         fprintf(stderr, "clCreateKernel: %d\n", err);
         goto Leave;
     }
 
+    // Create Buffers
     if ((mem_src0 = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(double) * num, NULL, &err)) == NULL) {
         fprintf(stderr, "clCreateBuffer: %d\n", err);
         goto Leave;
@@ -186,6 +203,7 @@ static void pzcAdd(const size_t num, double* dst, const double* src0, const doub
         goto Leave;
     }
 
+    // Send source
     if ((err = clEnqueueWriteBuffer(queue, mem_src0, CL_TRUE, 0, sizeof(double) * num, src0, 0, NULL, NULL)) != CL_SUCCESS) {
         fprintf(stderr, "clEnqueueWriteBuffer: %d\n", err);
         goto Leave;
@@ -195,12 +213,14 @@ static void pzcAdd(const size_t num, double* dst, const double* src0, const doub
         goto Leave;
     }
 
+    // Clear destination
     if ((err = clEnqueueFillBuffer(queue, mem_dst, &zero, sizeof(double), 0, sizeof(double) * num, 0, NULL, &write_event)) != CL_SUCCESS) {
         fprintf(stderr, "clEnqueueFillBuffer: %d\n", err);
         goto Leave;
     }
     clWaitForEvents(1, &write_event);
 
+    // Set kernel arguments
     if ((err = clSetKernelArg(kernel, 0, sizeof(size_t), &num)) != CL_SUCCESS) {
         fprintf(stderr, "clSetKernelArg: %d\n", err);
         goto Leave;
@@ -218,16 +238,19 @@ static void pzcAdd(const size_t num, double* dst, const double* src0, const doub
         goto Leave;
     }
 
+    // Run device kernel.
     if ((err = executeKernel(device_id, queue, kernel)) != CL_SUCCESS) {
         fprintf(stderr, "clEnqueueNDRangeKernel: %d\n", err);
         goto Leave;
     }
 
+    // Get destination
     if ((err = clEnqueueReadBuffer(queue, mem_dst, CL_TRUE, 0, sizeof(double) * num, dst, 0, NULL, NULL)) != CL_SUCCESS) {
         fprintf(stderr, "clEnqueueReadBuffer: %d\n", err);
         goto Leave;
     }
 
+    // Finish all commands
     clFlush(queue);
     clFinish(queue);
 
