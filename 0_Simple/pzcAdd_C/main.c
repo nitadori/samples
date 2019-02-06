@@ -20,18 +20,10 @@ static void initVector(size_t num, double* dst)
     }
 }
 
-static void initVector2(size_t num, double* dst1, double* dst2)
-{
-    srand(8009UL);
-    for (size_t i = 0; i < num; i++) {
-        dst1[i] = dst2[i] = rand() / (double)RAND_MAX;
-    }
-}
-
-static void cpuAdd(size_t num, const double* src, double* dst)
+static void cpuAdd(size_t num, double* dst, const double* src0, const double* src1)
 {
     for (size_t i = 0; i < num; ++i) {
-        dst[i] += src[i];
+        dst[i] = src0[i] + src1[i];
     }
 }
 
@@ -111,6 +103,7 @@ static cl_int executeKernel(cl_device_id device, cl_command_queue queue, cl_kern
     enum { Max_Device_Name_Size = 256 };
     char   device_name[Max_Device_Name_Size] = { 0 };
     size_t global_work_size                  = 0;
+    cl_event event = NULL;
 
     clGetDeviceInfo(device, CL_DEVICE_NAME, Max_Device_Name_Size - 1, device_name, NULL);
 
@@ -125,10 +118,17 @@ static cl_int executeKernel(cl_device_id device, cl_command_queue queue, cl_kern
     printf("Device   : %s\n", device_name);
     printf("Workitem : %zu\n", global_work_size);
 
-    return clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global_work_size, NULL, 0, NULL, NULL);
+    cl_int err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global_work_size, NULL, 0, NULL, &event);
+
+    if (err == CL_SUCCESS) {
+        clWaitForEvents(1, &event);
+        clReleaseEvent(event);
+    }
+
+    return err;
 }
 
-static void pzcAdd(size_t num, const double* src, double* dst)
+static void pzcAdd(const size_t num, double* dst, const double* src0, const double* src1)
 {
     cl_int           err;
     cl_platform_id   platform_id = NULL;
@@ -138,7 +138,10 @@ static void pzcAdd(size_t num, const double* src, double* dst)
     cl_command_queue queue       = NULL;
     cl_kernel        kernel      = NULL;
     cl_mem           mem_dst     = NULL;
-    cl_mem           mem_src     = NULL;
+    cl_mem           mem_src0    = NULL;
+    cl_mem           mem_src1    = NULL;
+    cl_event         write_event = NULL;
+    const double     zero        = 0.0;
 
     if ((err = clGetPlatformIDs(1, &platform_id, NULL)) != CL_SUCCESS) {
         fprintf(stderr, "clGetPlatformIDs: %d\n", err);
@@ -170,27 +173,35 @@ static void pzcAdd(size_t num, const double* src, double* dst)
         goto Leave;
     }
 
-    if ((mem_src = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(double) * num, NULL, &err)) == NULL) {
+    if ((mem_src0 = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(double) * num, NULL, &err)) == NULL) {
         fprintf(stderr, "clCreateBuffer: %d\n", err);
         goto Leave;
     }
-
+    if ((mem_src1 = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(double) * num, NULL, &err)) == NULL) {
+        fprintf(stderr, "clCreateBuffer: %d\n", err);
+        goto Leave;
+    }
     if ((mem_dst = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(double) * num, NULL, &err)) == NULL) {
         fprintf(stderr, "clCreateBuffer: %d\n", err);
         goto Leave;
     }
 
-    if ((err = clEnqueueWriteBuffer(queue, mem_src, CL_TRUE, 0, sizeof(double) * num, src, 0, NULL, NULL)) != CL_SUCCESS) {
+    if ((err = clEnqueueWriteBuffer(queue, mem_src0, CL_TRUE, 0, sizeof(double) * num, src0, 0, NULL, NULL)) != CL_SUCCESS) {
+        fprintf(stderr, "clEnqueueWriteBuffer: %d\n", err);
+        goto Leave;
+    }
+    if ((err = clEnqueueWriteBuffer(queue, mem_src1, CL_TRUE, 0, sizeof(double) * num, src1, 0, NULL, NULL)) != CL_SUCCESS) {
         fprintf(stderr, "clEnqueueWriteBuffer: %d\n", err);
         goto Leave;
     }
 
-    if ((err = clEnqueueWriteBuffer(queue, mem_dst, CL_TRUE, 0, sizeof(double) * num, dst, 0, NULL, NULL)) != CL_SUCCESS) {
-        fprintf(stderr, "clEnqueueWriteBuffer: %d\n", err);
+    if ((err = clEnqueueFillBuffer(queue, mem_dst, &zero, sizeof(double), 0, sizeof(double) * num, 0, NULL, &write_event)) != CL_SUCCESS) {
+        fprintf(stderr, "clEnqueueFillBuffer: %d\n", err);
         goto Leave;
     }
+    clWaitForEvents(1, &write_event);
 
-    if ((err = clSetKernelArg(kernel, 0, sizeof(cl_mem), &mem_src)) != CL_SUCCESS) {
+    if ((err = clSetKernelArg(kernel, 0, sizeof(size_t), &num)) != CL_SUCCESS) {
         fprintf(stderr, "clSetKernelArg: %d\n", err);
         goto Leave;
     }
@@ -198,7 +209,11 @@ static void pzcAdd(size_t num, const double* src, double* dst)
         fprintf(stderr, "clSetKernelArg: %d\n", err);
         goto Leave;
     }
-    if ((err = clSetKernelArg(kernel, 2, sizeof(size_t), &num)) != CL_SUCCESS) {
+    if ((err = clSetKernelArg(kernel, 2, sizeof(cl_mem), &mem_src0)) != CL_SUCCESS) {
+        fprintf(stderr, "clSetKernelArg: %d\n", err);
+        goto Leave;
+    }
+    if ((err = clSetKernelArg(kernel, 3, sizeof(cl_mem), &mem_src1)) != CL_SUCCESS) {
         fprintf(stderr, "clSetKernelArg: %d\n", err);
         goto Leave;
     }
@@ -217,8 +232,12 @@ static void pzcAdd(size_t num, const double* src, double* dst)
     clFinish(queue);
 
 Leave:
-    if (mem_src)
-        clReleaseMemObject(mem_src);
+    if (write_event)
+        clReleaseEvent(write_event);
+    if (mem_src0)
+        clReleaseMemObject(mem_src0);
+    if (mem_src1)
+        clReleaseMemObject(mem_src1);
     if (mem_dst)
         clReleaseMemObject(mem_dst);
     if (kernel)
@@ -260,22 +279,24 @@ int main(int argc, char* argv[])
     printf("Program  : %s\n", argv[0]);
     printf("Num      : %zu\n", num);
 
-    double* src     = calloc(num, sizeof(double));
+    double* src0    = calloc(num, sizeof(double));
+    double* src1    = calloc(num, sizeof(double));
     double* dst_sc  = calloc(num, sizeof(double));
     double* dst_cpu = calloc(num, sizeof(double));
 
-    if (src && dst_sc && dst_cpu) {
-        initVector(num, src);
-        initVector2(num, dst_cpu, dst_sc);
-        cpuAdd(num, src, dst_cpu);
-        pzcAdd(num, src, dst_sc);
+    if (src0 && src1 && dst_sc && dst_cpu) {
+        initVector(num, src0);
+        initVector(num, src1);
+        cpuAdd(num, dst_cpu, src0, src1);
+        pzcAdd(num, dst_sc, src0, src1);
         succeeded = verify(num, dst_sc, dst_cpu);
     } else {
         fprintf(stderr, "cannot allocate host memory.\n");
     }
     printf("%s\n", succeeded ? "PASS" : "FAIL");
 
-    free(src);
+    free(src0);
+    free(src1);
     free(dst_sc);
     free(dst_cpu);
 
