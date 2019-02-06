@@ -20,7 +20,6 @@ extern const char sc2_binary_kernel_pz_end[];
 extern const char sc1_64_binary_kernel_pz_start[];
 extern const char sc1_64_binary_kernel_pz_end[];
 
-
 namespace {
 std::mt19937 mt(0);
 inline void  initVector(std::vector<double>& src)
@@ -76,8 +75,8 @@ void pzcAdd(size_t num, std::vector<double>& dst, const std::vector<double>& src
         // Get workitem size and kernel binary.
         // sc1-64: 8192  (1024 PEs * 8 threads)
         // sc2   : 15782 (1984 PEs * 8 threads)
-        size_t global_work_size = 0;
-        std::string kernel_binary = "";
+        size_t      global_work_size = 0;
+        std::string kernel_binary    = "";
         {
             std::string device_name;
             device.getInfo(CL_DEVICE_NAME, &device_name);
@@ -88,9 +87,8 @@ void pzcAdd(size_t num, std::vector<double>& dst, const std::vector<double>& src
             global_work_size = global_work_size_[0];
             if (device_name.find("PEZY-SC2") != std::string::npos) {
                 global_work_size = std::min(global_work_size, (size_t)15872);
-                kernel_binary = std::string(sc2_binary_kernel_pz_start, sc2_binary_kernel_pz_end - sc2_binary_kernel_pz_start);
-            }
-            else {
+                kernel_binary    = std::string(sc2_binary_kernel_pz_start, sc2_binary_kernel_pz_end - sc2_binary_kernel_pz_start);
+            } else {
                 kernel_binary = std::string(sc1_64_binary_kernel_pz_start, sc1_64_binary_kernel_pz_end - sc1_64_binary_kernel_pz_start);
             }
 
