@@ -67,14 +67,16 @@ void fill_multi_device(std::vector<uint32_t>& a, uint32_t value)
         cl::CommandQueue queue(context, dev);
         cl::Buffer       buf(context, CL_MEM_READ_WRITE, sizeof(uint32_t) * L);
 
+        // Setup device program. See also the definition in pzc/kernel.pzc
         cl::Program::Binaries bins = { { &pz_binary[0], pz_binary.size() } };
         cl::Program           program(context, { dev }, bins);
 
-        auto range = cl::NDRange(dev.getInfo<CL_DEVICE_MAX_WORK_ITEM_SIZES>()[0]);
-
-        // See also the definition in pzc/kernel.pzc
         auto kernel = cl::make_kernel<size_t, cl::Buffer&, uint32_t>(program, "fill");
-        kernel(cl::EnqueueArgs(queue, range), N, buf, value);
+
+        size_t work_size = dev.getInfo<CL_DEVICE_MAX_WORK_ITEM_SIZES>()[0];
+        std::clog << "Work size = " << work_size << std::endl;
+
+        kernel(cl::EnqueueArgs(queue, cl::NDRange(work_size)), N, buf, value);
         cl::copy(queue, buf, a.begin() + i * L, a.end() + (i + 1) * L);
 
         contexts.push_back(std::move(context));
