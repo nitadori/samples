@@ -101,7 +101,11 @@ int main()
     // array to be filled
     std::vector<uint32_t> a(N, 0);
 
-    fill_multi_device(a, value);
+    try {
+        fill_multi_device(a, value);
+    } catch (const cl::Error& e) {
+        std::cerr << "PZCL Error : " << e.what() << " " << e.err();
+    }
 
     // Check the array is filled
     for (auto v : a) {
