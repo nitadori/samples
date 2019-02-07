@@ -1,7 +1,7 @@
 PZSDK_PATH?=/opt/pzsdk.ver4.1
 DEFAULT_MAKE=$(PZSDK_PATH)/make/default_pzcl_host.mk
 
-TARGET=pzcAdd
+TARGET=MultiDevice
 CPPSRC=main.cpp
 CCOPT=-O2 -Wall -std=c++11
 
@@ -19,4 +19,4 @@ export PZC_TARGET_ARCH
 include $(DEFAULT_MAKE)
 
 run:
-	@./$(TARGET) 102400
+	@./$(TARGET)
