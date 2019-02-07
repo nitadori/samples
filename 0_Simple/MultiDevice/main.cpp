@@ -16,14 +16,7 @@
 
 std::vector<unsigned char> read_pz_binary()
 {
-#ifdef DEVICE_SC1
-    std::string filename = "kernel.sc1/kernel.pz";
-#elif DEVICE_SC2
-    std::string filename = "kernel.sc2/kernel.pz";
-#else
-    std::string filename = ""; // reduce error
-    throw std::runtime_error("Unsupported Device");
-#endif
+    std::string filename = "kernel/kernel.pz";
 
     std::ifstream              ifs(filename, std::ios::binary);
     std::vector<unsigned char> bin((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
