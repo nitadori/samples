@@ -46,7 +46,10 @@ void fill_multi_device(std::vector<uint32_t>& a, uint32_t value)
     if (devs.size() == 0) {
         throw std::runtime_error("No devices found");
     }
+
     const size_t M = devs.size();
+    std::clog << "Use " << M << " device(s)" << std::endl;
+
     assert(N % M == 0); // Consider M|N case for simplicity
     const size_t L = N / M;
 
@@ -54,14 +57,15 @@ void fill_multi_device(std::vector<uint32_t>& a, uint32_t value)
 
     std::vector<cl::Context>      contexts;
     std::vector<cl::CommandQueue> queues;
+    std::vector<cl::Buffer>       buffers;
 
     for (size_t i = 0; i < M; ++i) {
         auto dev = devs[i];
 
         // Init Context, Buffers, and Queue
         cl::Context      context(dev);
-        cl::Buffer       buf(context, CL_MEM_READ_WRITE, sizeof(uint32_t) * L);
         cl::CommandQueue queue(context, dev);
+        cl::Buffer       buf(context, CL_MEM_READ_WRITE, sizeof(uint32_t) * L);
 
         cl::Program::Binaries bins = { { &pz_binary[0], pz_binary.size() } };
         cl::Program           program(context, { dev }, bins);
@@ -75,6 +79,7 @@ void fill_multi_device(std::vector<uint32_t>& a, uint32_t value)
 
         contexts.push_back(std::move(context));
         queues.push_back(std::move(queue));
+        buffers.push_back(std::move(buf));
     }
 
     for (auto&& queue : queues) {
