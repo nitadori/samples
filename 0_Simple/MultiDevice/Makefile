@@ -3,7 +3,7 @@ DEFAULT_MAKE=$(PZSDK_PATH)/make/default_pzcl_host.mk
 
 TARGET=pzcAdd
 CPPSRC=main.cpp
-CCOPT=-O2 -Wall -D__LINUX__ -DNDEBUG -std=c++11
+CCOPT=-O2 -Wall -std=c++11
 
 INC_DIR?=
 
