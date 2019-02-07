@@ -37,8 +37,6 @@ void fill_multi_device(std::vector<uint32_t>& a, uint32_t value)
         throw std::runtime_error("No platform found");
     }
     cl::Platform plat = platforms[0];
-    std::clog << "Using platform: " << plat.getInfo<CL_PLATFORM_NAME>()
-              << std::endl;
 
     // Init device
     std::vector<cl::Device> devs;
@@ -69,8 +67,9 @@ void fill_multi_device(std::vector<uint32_t>& a, uint32_t value)
 
         // Setup device program. See also the definition in pzc/kernel.pzc
         cl::Program::Binaries bins = { { &pz_binary[0], pz_binary.size() } };
-        cl::Program program (context, { dev }, bins);
-        auto kernel  = cl::make_kernel<size_t, cl::Buffer&, uint32_t>(program, "fill");
+
+        cl::Program program(context, { dev }, bins);
+        auto        kernel = cl::make_kernel<size_t, cl::Buffer&, uint32_t>(program, "fill");
 
         size_t work_size = dev.getInfo<CL_DEVICE_MAX_WORK_ITEM_SIZES>()[0];
         std::clog << "Work size = " << work_size << std::endl;
@@ -88,8 +87,12 @@ void fill_multi_device(std::vector<uint32_t>& a, uint32_t value)
     }
 }
 
-int main()
+int main(int argc, char* argv[])
 {
+    std::clog << "-----------------------------------------------\n"
+              << "Program: " << argv[0] << "\n"
+              << std::endl;
+
     const int      N     = 300;
     const uint32_t value = 1234;
 
@@ -107,5 +110,7 @@ int main()
     for (auto v : a) {
         assert(v == value);
     }
+
+    std::clog << "-----------------------------------------------" << std::endl;
     return 0;
 }
