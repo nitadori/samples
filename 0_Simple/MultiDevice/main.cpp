@@ -9,10 +9,14 @@
 #include <cassert>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <random>
 #include <sstream>
 #include <stdexcept>
 #include <vector>
+
+template <typename T>
+using pvec = std::vector<std::unique_ptr<T>>;
 
 std::vector<unsigned char> read_pz_binary()
 {
@@ -55,37 +59,37 @@ void fill_multi_device(std::vector<uint32_t>& a, uint32_t value)
 
     const auto pz_binary = read_pz_binary();
 
-    std::vector<cl::Context>      contexts;
-    std::vector<cl::CommandQueue> queues;
-    std::vector<cl::Buffer>       buffers;
+    pvec<cl::Context>      contexts;
+    pvec<cl::CommandQueue> queues;
+    pvec<cl::Buffer>       buffers;
 
     for (size_t i = 0; i < M; ++i) {
         auto dev = devs[i];
 
         // Init Context, Buffers, and Queue
-        cl::Context      context(dev);
-        cl::CommandQueue queue(context, dev);
-        cl::Buffer       buf(context, CL_MEM_READ_WRITE, sizeof(uint32_t) * L);
+        auto context = new cl::Context(dev);
+        auto queue   = new cl::CommandQueue(*context, dev);
+        auto buf     = new cl::Buffer(*context, CL_MEM_READ_WRITE, sizeof(uint32_t) * L);
 
         // Setup device program. See also the definition in pzc/kernel.pzc
         cl::Program::Binaries bins = { { &pz_binary[0], pz_binary.size() } };
-        cl::Program           program(context, { dev }, bins);
+        cl::Program           program(*context, { dev }, bins);
 
         auto kernel = cl::make_kernel<size_t, cl::Buffer&, uint32_t>(program, "fill");
 
         size_t work_size = dev.getInfo<CL_DEVICE_MAX_WORK_ITEM_SIZES>()[0];
         std::clog << "Work size = " << work_size << std::endl;
 
-        kernel(cl::EnqueueArgs(queue, cl::NDRange(work_size)), N, buf, value);
-        cl::copy(queue, buf, a.begin() + i * L, a.end() + (i + 1) * L);
+        kernel(cl::EnqueueArgs(*queue, cl::NDRange(work_size)), N, *buf, value);
+        cl::copy(*queue, *buf, a.begin() + i * L, a.end() + (i + 1) * L);
 
-        contexts.push_back(std::move(context));
-        queues.push_back(std::move(queue));
-        buffers.push_back(std::move(buf));
+        contexts.emplace_back(context);
+        queues.emplace_back(queue);
+        buffers.emplace_back(buf);
     }
 
     for (auto&& queue : queues) {
-        queue.finish();
+        queue->finish();
     }
 }
 
