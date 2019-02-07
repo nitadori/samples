@@ -82,7 +82,7 @@ void fill_multi_device(std::vector<uint32_t>& a, uint32_t value)
         std::clog << "Work size = " << work_size << std::endl;
 
         kernel(cl::EnqueueArgs(*queue, cl::NDRange(work_size)), N, *buf, value);
-        cl::copy(*queue, *buf, a.begin() + i * L, a.end() + (i + 1) * L);
+        cl::copy(*queue, *buf, a.begin() + i * L, a.begin() + (i + 1) * L);
 
         contexts.emplace_back(context);
         queues.emplace_back(queue);
