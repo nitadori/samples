@@ -1,0 +1,71 @@
+/*!
+ * @author    PEZY Computing, K.K.
+ * @date      2019
+ * @copyright BSD-3-Clause
+ */
+
+#include <pzc_builtin.h>
+
+namespace {
+	inline void sync_pe()
+	{
+		__builtin_pz_sync_lv(1);
+	}
+}
+
+void pzc_addWithLocal(size_t        num,
+             double*       dst,
+             const double* src0,
+             const double* src1)
+{
+    size_t       pid              = get_pid();
+    size_t       tid              = get_tid();
+    size_t       gid              = pid * get_maxtid() + tid;
+    const size_t GLOBAL_WORK_SIZE = get_maxtid() * get_maxpid();
+
+	constexpr size_t elem = 64;
+	size_t pe_num = num / elem;
+	size_t remain = num % elem;
+	if(remain) {
+		pe_num++; // remain
+	}
+
+	// Get Local memory addr
+	size_t stack_size_per_thread = 0x400;  // 1024 byte
+	size_t stack_size = stack_size_per_thread * get_maxtid();
+	void* local_mem = (void*)stack_size;
+
+	double* local_dst = (double*)local_mem;
+	double* local_src0 = local_dst + elem;
+	double* local_src1 = local_src0 + elem;
+
+	for(size_t l = pid; l < pe_num; l += get_maxpid()) {
+
+		size_t offset = l * elem;
+		size_t lim = (l == pe_num - 1 && remain != 0)? remain : elem;
+
+		// load
+		for(size_t i = tid; i < lim; i += get_maxtid()) {
+			local_dst[i] = 0;
+			local_src0[i] = src0[offset + i];
+			local_src1[i] = src1[offset + i];
+			chgthread();
+		}
+		sync_pe();
+
+		// add
+		for(size_t i = tid; i < lim; i += get_maxtid()) {
+			local_dst[i] = local_src0[i] + local_src1[i];
+			chgthread();
+		}
+		sync_pe();
+
+		// store
+		for(size_t i = tid; i < lim; i += get_maxtid()) {
+			dst[offset + i] = local_dst[i];
+		}
+		sync_pe();
+	}
+
+    flush();
+}
