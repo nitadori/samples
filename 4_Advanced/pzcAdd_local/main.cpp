@@ -67,7 +67,7 @@ cl::Program createProgram(cl::Context& context, const std::vector<cl::Device>& d
 
 cl::Program createProgram(cl::Context& context, const cl::Device& device, const std::string& filename)
 {
-    std::vector<cl::Device> devices { device };
+    std::vector<cl::Device> devices{ device };
     return createProgram(context, devices, filename);
 }
 
@@ -100,25 +100,24 @@ void pzcAdd(size_t num, std::vector<double>& dst, const std::vector<double>& src
         // Give kernel name without pzc_ prefix.
         auto kernel = cl::Kernel(program, "addWithLocal");
 
-		// Get stack size modify function.
-		typedef CL_API_ENTRY cl_int (CL_API_CALL * pfnPezyExtSetPerThreadStackSize)(cl_kernel	 kernel, size_t size);
-		const auto clExtSetPerThreadStackSize = reinterpret_cast<pfnPezyExtSetPerThreadStackSize>(clGetExtensionFunctionAddress("pezy_set_per_thread_stack_size"));
-		if(clExtSetPerThreadStackSize == nullptr)
-		{
-			throw "pezy_set_per_thread_stack_size not found";
-		}
+        // Get stack size modify function.
+        typedef CL_API_ENTRY cl_int(CL_API_CALL * pfnPezyExtSetPerThreadStackSize)(cl_kernel kernel, size_t size);
+        const auto           clExtSetPerThreadStackSize = reinterpret_cast<pfnPezyExtSetPerThreadStackSize>(clGetExtensionFunctionAddress("pezy_set_per_thread_stack_size"));
+        if (clExtSetPerThreadStackSize == nullptr) {
+            throw "pezy_set_per_thread_stack_size not found";
+        }
 
-		// Set stack size each thread.
-		// Each thread's stack size is 2.5KB(SC2) / 2KB(SC) each thread by default.
-		// This function will set stack size 1KB each thread.
-		// Each PE has 8 thread.
-		// And also PE has 20KB(SC2) / 16KB(SC) Scratch pad.
-		// So, we can use
-		// 20 - 8 = 12KB(SC2)
-		// 16 - 8 =  8KB(SC)
-		// as a user area.
-		size_t stack_size_per_thread = 1024;
-		clExtSetPerThreadStackSize(kernel(), stack_size_per_thread);
+        // Set stack size each thread.
+        // Each thread's stack size is 2.5KB(SC2) / 2KB(SC) each thread by default.
+        // This function will set stack size 1KB each thread.
+        // Each PE has 8 thread.
+        // And also PE has 20KB(SC2) / 16KB(SC) Scratch pad.
+        // So, we can use
+        // 20 - 8 = 12KB(SC2)
+        // 16 - 8 =  8KB(SC)
+        // as a user area.
+        size_t stack_size_per_thread = 1024;
+        clExtSetPerThreadStackSize(kernel(), stack_size_per_thread);
 
         // Create Buffers.
         auto device_src0 = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * num);
