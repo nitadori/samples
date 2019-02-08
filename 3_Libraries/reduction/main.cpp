@@ -10,6 +10,7 @@
 #include <chrono>
 #include <fstream>
 #include <iostream>
+#include <cstdio>
 #include <random>
 #include <sstream>
 #include <stdexcept>
@@ -145,12 +146,7 @@ void benchmarkSum(const std::vector<double>& src)
             double total_time = 0.0; // total elapsed time in nanoseconds
             bool   verify_ok  = true;
 
-            for (size_t i = 0; i < loop_count + 1; i++) {
-                // Clear dst.
-                cl::Event write_event;
-                command_queue.enqueueFillBuffer(device_dst, 0, 0, sizeof(double), nullptr, &write_event);
-                write_event.wait();
-
+            for (size_t i = 0; i < loop_count + 0; i++) {
                 // Invoke kernel
                 cl::Event event;
                 command_queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(global_work_size), cl::NullRange, nullptr, &event);
@@ -178,7 +174,9 @@ void benchmarkSum(const std::vector<double>& src)
 
             // Print result
             if (verify_ok) {
-                std::cout << kernel_name << "\t" << (total_time / loop_count) / 1e6 << " ms" << std::endl;
+                double sec       = (total_time / loop_count) / 1e9;
+                double bandwidth = 8.0 * src.size() / sec / 1e9;
+                std::printf("%s\t %10.4f ms\t %6.2f GB/s\n", kernel_name.c_str(), sec*1000, bandwidth);
             }
         }
     } catch (const cl::Error& e) {
