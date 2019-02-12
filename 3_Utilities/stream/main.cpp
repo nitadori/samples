@@ -1,3 +1,9 @@
+/*!
+ * @author    PEZY Computing, K.K.
+ * @date      2019
+ * @copyright BSD-3-Clause
+ */
+
 #include "pezy.hpp"
 #include <cstring>
 #include <iostream>

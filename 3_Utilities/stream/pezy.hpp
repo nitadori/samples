@@ -1,3 +1,9 @@
+/*!
+ * @author    PEZY Computing, K.K.
+ * @date      2019
+ * @copyright BSD-3-Clause
+ */
+
 #ifndef PEZY_HPP
 #define PEZY_HPP
 
