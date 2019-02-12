@@ -15,10 +15,10 @@
 #include <vector>
 
 // symbol names for embedded kernel binary
-extern const char sc2_binary_kernel_pz_start[];
-extern const char sc2_binary_kernel_pz_end[];
-extern const char sc1_64_binary_kernel_pz_start[];
-extern const char sc1_64_binary_kernel_pz_end[];
+extern const char _binary_kernel_sc2_pz_start[];
+extern const char _binary_kernel_sc2_pz_end[];
+extern const char _binary_kernel_sc1_64_pz_start[];
+extern const char _binary_kernel_sc1_64_pz_end[];
 
 namespace {
 std::mt19937 mt(0);
@@ -87,9 +87,9 @@ void pzcAdd(size_t num, std::vector<double>& dst, const std::vector<double>& src
             global_work_size = global_work_size_[0];
             if (device_name.find("PEZY-SC2") != std::string::npos) {
                 global_work_size = std::min(global_work_size, (size_t)15872);
-                kernel_binary    = std::string(sc2_binary_kernel_pz_start, sc2_binary_kernel_pz_end - sc2_binary_kernel_pz_start);
+                kernel_binary    = std::string(_binary_kernel_sc2_pz_start, _binary_kernel_sc2_pz_end - _binary_kernel_sc2_pz_start);
             } else {
-                kernel_binary = std::string(sc1_64_binary_kernel_pz_start, sc1_64_binary_kernel_pz_end - sc1_64_binary_kernel_pz_start);
+                kernel_binary = std::string(_binary_kernel_sc1_64_pz_start, _binary_kernel_sc1_64_pz_end - _binary_kernel_sc1_64_pz_start);
             }
 
             std::cout << "Use device : " << device_name << std::endl;
