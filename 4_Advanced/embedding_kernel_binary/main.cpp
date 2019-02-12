@@ -47,7 +47,7 @@ cl::Program createProgram(cl::Context& context, const std::vector<cl::Device>& d
 
 cl::Program createProgram(cl::Context& context, const cl::Device& device, const std::string& binary_data)
 {
-    std::vector<cl::Device> devices{ device };
+    std::vector<cl::Device> devices { device };
     return createProgram(context, devices, binary_data);
 }
 
