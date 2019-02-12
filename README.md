@@ -35,4 +35,6 @@ This sample contains following examples.
 Environments of Makefile
 ========================
 
-| PZC\_TARGET\_ARCH| Change target PEZY architectures. For PEZY-SC use `sc1-64`. For PEZY-SC2 use `sc2`. default is `sc2` |
+| Variables        | Descriptions                                                                                            |
+|------------------|---------------------------------------------------------------------------------------------------------|
+| PZC\_TARGET\_ARCH| To change target PEZY architectures. For PEZY-SC use `sc1-64`. For PEZY-SC2 use `sc2`. default is `sc2` |
