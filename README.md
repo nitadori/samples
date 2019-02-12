@@ -1,8 +1,8 @@
 Examples for PEZY-SCx processors (For PZSDK v4.1)
 =================================================
 
-How to build programs
----------------------
+How to build a program
+----------------------
 
 You can build program to change current derectory to project directory.
 
@@ -18,8 +18,8 @@ To build program, use the `make` command:
 $ make
 ```
 
-How to execute programs
------------------------
+How to execute a program
+------------------------
 
 To execute program, just run `make run` command
 
@@ -32,8 +32,8 @@ List of Samples
 
 This sample contains following examples.
 
-Environments of Makefile
-========================
+Environments for Makefile
+=========================
 
 | Variables        | Descriptions                                                                                            |
 |------------------|---------------------------------------------------------------------------------------------------------|
