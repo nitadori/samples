@@ -9,7 +9,7 @@ You can build program to change current derectory to project directory.
 To change directory, use the `cd` command:
 
 ```
-$ cd 0_Simple/pzcAdd
+$ cd 0_Intro/pzcAdd
 ```
 
 To build program, use the `make` command:
