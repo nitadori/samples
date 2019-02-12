@@ -2,11 +2,13 @@
 PZSDK_PATH?=/opt/pzsdk.ver4.1
 export PZSDK_PATH
 
-# kernel build directory
-PZCL_KERNEL_DIRS = kernel.sc1-64 kernel.sc2
+# kernel architectures
+# supported architecture:
+# sc1-64, sc2
+PZC_ARCHITECTURES = sc1-64 sc2
 
 # object files containing kernel binary
-PZCL_KERNEL_OBJS = $(addsuffix /kernel.o, $(PZCL_KERNEL_DIRS))
+PZCL_KERNEL_OBJS = $(addsuffix .o, $(addprefix kernel/kernel., $(PZC_ARCHITECTURES)))
 
 CXX      = c++
 CXXFLAGS = -O2 -std=c++11 -Wall -Wextra -Wcast-align -Wcast-qual -I $(PZSDK_PATH)/inc
@@ -28,7 +30,9 @@ $(PZCL_KERNEL_OBJS): kernel
 host: $(PROG)
 
 kernel:
-	for dirs in $(PZCL_KERNEL_DIRS); do $(MAKE) -C $$dirs kernel.o; done
+	for arch in $(PZC_ARCHITECTURES); do \
+		$(MAKE) -C kernel PZC_TARGET_ARCH=$$arch kernel.$$arch.o; \
+	done
 
 run: host kernel
 	@LD_LIBRARY_PATH=$(LD_LIBRARY_PATH):$(PZSDK_PATH)/lib ./$(PROG) 102400
@@ -37,7 +41,8 @@ clean:
 	rm -f $(PROG)
 	rm -f $(OBJS)
 	rm -f $(PZCL_KERNEL_OBJS)
-	for dirs in $(PZCL_KERNEL_DIRS); do $(MAKE) -C $$dirs clean; done
-
+	for arch in $(PZC_ARCHITECTURES); do \
+		$(MAKE) -C kernel PZC_TARGET_ARCH=$$arch clean; \
+	done
 
 .PHONY: all host kernel run clean
