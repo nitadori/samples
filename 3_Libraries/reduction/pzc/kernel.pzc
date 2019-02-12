@@ -18,6 +18,17 @@ static double shared[16384]; // 8 * 2048
 #define THREAD_IN_CITY 128
 #define THREAD_IN_PE 8
 
+void pzc_flush_LLC()
+{
+    // In the SC2, the flush() function does not purge contents of the LLC.
+    // To assume the LLC is empty, we do some magic
+#if defined(__pezy_sc2__)
+    __builtin_pz_flush_lv(7);
+#else
+    flush();
+#endif
+}
+
 void pzc_sum_simple(
     double*       sum,
     size_t        num,

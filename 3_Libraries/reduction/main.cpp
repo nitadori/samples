@@ -8,9 +8,9 @@
 #include <CL/cl.hpp>
 #include <cassert>
 #include <chrono>
+#include <cstdio>
 #include <fstream>
 #include <iostream>
-#include <cstdio>
 #include <random>
 #include <sstream>
 #include <stdexcept>
@@ -71,7 +71,7 @@ cl::Program createProgram(cl::Context& context, const std::vector<cl::Device>& d
 
 cl::Program createProgram(cl::Context& context, const cl::Device& device, const std::string& filename)
 {
-    std::vector<cl::Device> devices { device };
+    std::vector<cl::Device> devices{ device };
     return createProgram(context, devices, filename);
 }
 
@@ -125,6 +125,9 @@ void benchmarkSum(const std::vector<double>& src)
         // Send src.
         command_queue.enqueueWriteBuffer(device_src, true, 0, sizeof(double) * num, &src[0]);
 
+        // Create kernel for flush
+        auto flush_kernel = cl::Kernel(program, "flush_LLC");
+
         // Get workitem size.
         // sc1-64: 8192  (1024 PEs * 8 threads)
         // sc2   : 15782 (1984 PEs * 8 threads)
@@ -147,6 +150,9 @@ void benchmarkSum(const std::vector<double>& src)
             bool   verify_ok  = true;
 
             for (size_t i = 0; i < loop_count + 0; i++) {
+                // Cleanup cache
+                command_queue.enqueueNDRangeKernel(flush_kernel, cl::NullRange, cl::NDRange(global_work_size), cl::NullRange, nullptr, nullptr);
+
                 // Invoke kernel
                 cl::Event event;
                 command_queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(global_work_size), cl::NullRange, nullptr, &event);
@@ -175,8 +181,17 @@ void benchmarkSum(const std::vector<double>& src)
             // Print result
             if (verify_ok) {
                 double sec       = (total_time / loop_count) / 1e9;
-                double bandwidth = 8.0 * src.size() / sec / 1e9;
-                std::printf("%s\t %10.4f ms\t %6.2f GB/s\n", kernel_name.c_str(), sec*1000, bandwidth);
+                double bytes     = 8.0 * src.size();
+                double bandwidth = bytes / sec / 1e9;
+                if (bytes >= 1e10) {
+                    std::printf("%s\t %10.4f ms\t %6.2f GB\t %6.2f GB/s\n", kernel_name.c_str(), sec * 1000, bytes / 1e9, bandwidth);
+                } else if (bytes >= 1e7) {
+                    std::printf("%s\t %10.4f ms\t %6.2f MB\t %6.2f GB/s\n", kernel_name.c_str(), sec * 1000, bytes / 1e6, bandwidth);
+                } else if (bytes >= 1e4) {
+                    std::printf("%s\t %10.4f ms\t %6.2f KB\t %6.2f GB/s\n", kernel_name.c_str(), sec * 1000, bytes / 1e3, bandwidth);
+                } else {
+                    std::printf("%s\t %10.4f ms\t %6d B \t %6.2f GB/s\n", kernel_name.c_str(), sec * 1000, static_cast<int>(bytes), bandwidth);
+                }
             }
         }
     } catch (const cl::Error& e) {
