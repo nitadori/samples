@@ -27,4 +27,7 @@ $(TARGET):$(OBJS)
 clean:
 	-@rm $(TARGET) $(OBJS) $(DEPS)
 
+run:
+	./$(TARGET)
+
 -include $(DEPS)
