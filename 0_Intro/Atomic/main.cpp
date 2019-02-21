@@ -195,9 +195,9 @@ int main(int argc, char** argv)
     // verify
     if (verify(dst_sc, dst_cpu)) {
         std::cout << "PASS" << std::endl;
+        return 0;
     } else {
         std::cout << "FAIL" << std::endl;
+        return 1;
     }
-
-    return 0;
 }
