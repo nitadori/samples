@@ -18,6 +18,12 @@ void pzc_atomic_add(const double* src,
     size_t       gid              = pid * get_maxtid() + tid;
     const size_t GLOBAL_WORK_SIZE = get_maxtid() * get_maxpid();
 
+    // clear the destination.
+    if (gid == 0) {
+        *dst = 0.0;
+    }
+    atomic_flush();
+
     for (size_t i = gid; i < num; i += GLOBAL_WORK_SIZE) {
         double s = src[i];
         chgthread();
