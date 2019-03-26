@@ -93,8 +93,8 @@ int main(int argc, char* argv[])
               << "Program: " << argv[0] << "\n"
               << std::endl;
 
-    const int      N     = 300;
-    const uint32_t value = 1234;
+    constexpr int      N     = 400;
+    constexpr uint32_t value = 1234;
 
     // array to be filled
     std::vector<uint32_t> a(N, 0);
