@@ -89,7 +89,7 @@ void usage(const std::string& bin_name)
 
 int parseArgs(int argc, char** argv)
 {
-    const char*         optstring  = "hd:s";
+    const char*         optstring  = "hd:s:";
     const struct option longopts[] = {
         //{    *name,           has_arg, *flag, val },
         { "help", no_argument, nullptr, 'h' },
