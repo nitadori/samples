@@ -31,9 +31,7 @@ void pzc_addWithLocal(size_t        num,
     }
 
     // Get Local memory addr
-    size_t stack_size_per_thread = 0x400; // 1024 byte
-    size_t stack_size            = stack_size_per_thread * get_maxtid();
-    void*  local_mem             = (void*)stack_size;
+    void*  local_mem             = (void*)get_local_mem_addr();
 
     double* local_dst  = (double*)local_mem;
     double* local_src0 = local_dst + elem;
