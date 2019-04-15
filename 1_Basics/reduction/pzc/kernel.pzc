@@ -29,6 +29,27 @@ void pzc_flush_LLC()
 #endif
 }
 
+struct Base{
+	virtual double add(double a, double b) = 0; /*{
+		return a + b;
+	}*/
+};
+
+struct Derived : Base {
+	virtual double add(double a, double b){
+		return 1.000000000001 * (a + b);
+		// return 123.456;
+	}
+};
+
+/*
+extern "C" {
+	long _ZTVN10__cxxabiv120__si_class_type_infoE(){};
+}
+*/
+// asm("_ZTVN10__cxxabiv120__si_class_type_infoE:\n\t.quad 0");
+
+
 void pzc_sum_simple(
     double*       sum,
     size_t        num,
@@ -39,13 +60,17 @@ void pzc_sum_simple(
     size_t       gid              = pid * get_maxtid() + tid;
     const size_t GLOBAL_WORK_SIZE = get_maxtid() * get_maxpid();
 
+     Derived der;
+     Base *obj = &der;
+
     // Result == Sum of data[0..num-1]
     {
         double acc = 0.0;
         for (size_t i = gid; i < num; i += GLOBAL_WORK_SIZE) {
             double val = data[i];
             chgthread();
-            acc += val;
+            // acc += val;
+	    acc = obj->add(acc, val);
         }
         shared[gid] = acc;
     }
@@ -55,7 +80,8 @@ void pzc_sum_simple(
     if (gid < THREAD_IN_CITY) {
         double acc = 0.0;
         for (size_t i = gid; i < GLOBAL_WORK_SIZE; i += THREAD_IN_CITY) {
-            acc += shared[i];
+            // acc += shared[i];
+	    acc = obj->add(acc, shared[i]);
             chgthread();
         }
         shared[gid] = acc;
@@ -66,7 +92,8 @@ void pzc_sum_simple(
     if (gid < THREAD_IN_PE) {
         double acc = 0.0;
         for (size_t i = gid; i < THREAD_IN_CITY; i += 8) {
-            acc += shared[i];
+            // acc += shared[i];
+	    acc = obj->add(acc, shared[i]);
             chgthread();
         }
         shared[gid] = acc;
@@ -77,7 +104,8 @@ void pzc_sum_simple(
     if (gid == 0) {
         double acc = 0.0;
         for (int i = 0; i < THREAD_IN_PE; i++) {
-            acc += shared[i];
+            // acc += shared[i];
+	    acc = obj->add(acc, shared[i]);
         }
         *sum = acc;
     }

@@ -9,3 +9,4 @@ PZCSRC=kernel.pzc
 vpath %.pzc ../pzc
 
 include $(DEFAULT_MAKE)
+CLANG_OPT+=-fno-rtti

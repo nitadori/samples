@@ -166,6 +166,11 @@ void benchmarkSum(const std::vector<double>& src)
                 double actual;
                 command_queue.enqueueReadBuffer(device_dst, true, 0, sizeof(double), &actual);
 
+		if(kernel_name == "sum_simple"){
+			printf("expected = %24.16e\n", expected);
+			printf("actual   = %24.16e\n", actual);
+		}
+
                 // Check result
                 if (std::abs(expected - actual) / std::max(std::abs(expected), std::abs(actual)) > 1e-8) {
                     std::cout << kernel_name << " failed:  expected: " << expected << "   actual: " << actual << std::endl;
